@@ -1,44 +1,74 @@
 const { app, BrowserWindow } = require('electron')
 
-function createWindow () {
-  // Create the browser window.
-  const win = new BrowserWindow({
-    width: 800,
-    height: 600,
-    backgroundColor: '#fff',
-    webPreferences: {
-      nodeIntegration: true
-    }
-  })
+let win; // todo
+app.whenReady().then(() => {
+    win = new BrowserWindow({
+        width: 800,
+        height: 600,
+        backgroundColor: '#fff',
+        webPreferences: {
+            nodeIntegration: true,
+            worldSafeExecuteJavaScript: true, // todo?
+        }
+    })
 
-  // and load the index.html of the app.
-  win.loadFile('index.html')
+    win.loadFile('index.html')
+    win.webContents.openDevTools()
+})
 
-  // Open the DevTools.
-  win.webContents.openDevTools()
-}
-
-// This method will be called when Electron has finished
-// initialization and is ready to create browser windows.
-// Some APIs can only be used after this event occurs.
-app.whenReady().then(createWindow)
-
-// Quit when all windows are closed, except on macOS. There, it's common
-// for applications and their menu bar to stay active until the user quits
-// explicitly with Cmd + Q.
 app.on('window-all-closed', () => {
-  if (process.platform !== 'darwin') {
-    app.quit()
-  }
+    if (process.platform !== 'darwin') { // on macOS don't exit when last window is closed
+        app.quit()
+    }
 })
 
 app.on('activate', () => {
-  // On macOS it's common to re-create a window in the app when the
-  // dock icon is clicked and there are no other windows open.
-  if (BrowserWindow.getAllWindows().length === 0) {
-    createWindow()
-  }
+    if (BrowserWindow.getAllWindows().length === 0) { // on macOS create a new window if app icon clicked
+        createWindow()
+    }
 })
 
-// In this file you can include the rest of your app's specific main process
-// code. You can also put them in separate files and require them here.
+
+// 1.1 Gemini transactions
+// C: Opens connection S: Accepts connection C/S: Complete TLS handshake (see section 4) C: Validates server certificate (see 4.2) C: Sends request (one CRLF terminated line) (see section 2) S: Sends response header (one CRLF terminated line), closes connection under non-success conditions (see 3.1 and 3.2) S: Sends response body (text or binary data) (see 3.3) S: Closes connection C: Handles response (see 3.4)
+// Gemini requests are a single CRLF-terminated line with the following structure:
+// <URL><CR><LF></LF>
+
+// gemini://gemini.circumlunar.space
+
+const { connect } = require('tls')
+const { readFileSync } = require('fs')
+
+const options = {
+    key: readFileSync('certs/private-key.pem'),
+    cert: readFileSync('certs/public-cert.pem')
+}
+
+// const url = 'gemini://gemini.circumlunar.space' // will respond with redirect
+const url = 'gemini://gemini.circumlunar.space/'
+let conn = connect(1965, 'gemini.circumlunar.space', options, function() {
+    if (conn.authorized) {
+        console.log("Connection authorized by a Certificate Authority.")
+    } else {
+        console.log("Connection not authorized: " + conn.authorizationError)
+    }
+    console.log()
+
+    conn.write(`${url}\r\n`)
+})
+
+conn.on('data', function (data) {
+    const lines = data.toString().split('\n')
+    console.log(lines.length);
+
+    if(lines.length === 2) {
+        console.log(`Header: ${lines[0]}`)
+    } else {
+        lines.shift() // remove first line
+        win.webContents.send('response', lines)
+    }
+
+    conn.end()
+
+
+})

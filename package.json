@@ -3,6 +3,7 @@
   "version": "0.1.0",
   "description": "Gemini browser in Electron",
   "main": "main.js",
+  "repository": "github:resonatom/spacewar",
   "scripts": {
     "start": "electron ."
   },
@@ -10,5 +11,8 @@
   "license": "MIT",
   "devDependencies": {
     "electron": "^9.2.0"
+  },
+  "dependencies": {
+    "node-forge": "^0.9.1"
   }
 }

@@ -1,5 +1,10 @@
 # spacewar
 
-Gemini browser running on Electron
+Gemini browser running on Electron.  Just for fun, mostly doesn't work!
 
-Just for fun right now, not secure
+Installation
+------------
+	git clone git@github.com:ResonAtom/spacewar.git
+	cd spacewar
+	npm ci
+	npm start
